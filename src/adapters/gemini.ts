@@ -259,7 +259,8 @@ export const geminiAdapter: ChatSiteAdapter = {
     return { items: page.items, next_cursor: page.next_cursor, total: null };
   },
   async fetchConversation(id: string): Promise<ChatConversation> {
-    const payload = await geminiRpc(READ_RPC, [id, null, null, 0]);
+    const normalizedId = id.startsWith('c_') ? id.slice(2) : id;
+    const payload = await geminiRpc(READ_RPC, [`c_${normalizedId}`, 10, null, 1, [0], [4], null, 1]);
     return parseGeminiConversation(id, payload);
   },
 };
