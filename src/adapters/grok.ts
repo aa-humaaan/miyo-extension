@@ -177,7 +177,9 @@ async function fetchDetail(id: string): Promise<unknown> {
   );
   const responseIds = Array.isArray(detail.responseIds) ? detail.responseIds.filter((v): v is string => typeof v === 'string') : [];
   if (!responseIds.length) return detail;
-  const loaded = await grokApi<unknown>('/rest/app-chat/conversations/load-responses', {
+  const loaded = await grokApi<unknown>(
+    `/rest/app-chat/conversations/${encodeURIComponent(id)}/load-responses`,
+    {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ conversationId: id, responseIds }),
