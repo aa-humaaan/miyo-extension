@@ -6,7 +6,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "types": [
-      "node"
+      "node",
+      "chrome"
     ]
   },
   "include": [
