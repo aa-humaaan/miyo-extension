@@ -188,7 +188,8 @@ export function parseGeminiConversation(id: string, payload: unknown): ChatConve
     conversation_id: conversationId,
     title: titleCache.get(id) ?? titleCache.get(conversationId) ?? 'Gemini conversation',
     url: `${GEMINI}/app/${encodeURIComponent(conversationId)}`,
-    created_at: createdAt,
+    // Gemini's conversation detail payload does not expose a trustworthy creation timestamp.
+    created_at: null,
     updated_at: updatedAt,
     messages,
   };
