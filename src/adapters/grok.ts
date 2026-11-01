@@ -208,11 +208,11 @@ export const grokAdapter: ChatSiteAdapter = {
   async probeSession(): Promise<SiteSession> {
     try {
       const raw = await listPage(null);
-      // Empty conversation lists are valid for a signed-in new account.
-      if (Array.isArray(raw)) return { signedIn: true, email: null };
-      if (raw && typeof raw === 'object' &&
-        (Array.isArray((raw as GrokListResponse).conversations) || Array.isArray((raw as GrokListResponse).items))) {
-        return { signedIn: true, email: null };
+      // Grok may serve an empty list to an anonymous session too. Without
+      // an account-bearing response, an empty list is indeterminate and
+      // must not be treated as proof of authentication.
+      if (raw && typeof raw === 'object' && Array.isArray((raw as GrokListResponse).conversations)) {
+        return { signedIn: (raw as GrokListResponse).conversations!.length > 0, email: null };
       }
       return { signedIn: false, email: null };
     } catch {
