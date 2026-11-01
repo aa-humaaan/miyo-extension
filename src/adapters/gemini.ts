@@ -255,7 +255,7 @@ export const geminiAdapter: ChatSiteAdapter = {
     catch { sessionCache = null; return { signedIn: false, email: null }; }
   },
   async listItems(cursor: string | null): Promise<ItemListPage> {
-    const page = parseGeminiListPayload(await geminiRpc(LIST_RPC, [cursor ?? null, PAGE_SIZE, null]));
+    const page = parseGeminiListPayload(await geminiRpc(LIST_RPC, [PAGE_SIZE, cursor, [0, null, 1]]));
     return { items: page.items, next_cursor: page.next_cursor, total: null };
   },
   async fetchConversation(id: string): Promise<ChatConversation> {
