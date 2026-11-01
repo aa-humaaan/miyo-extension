@@ -127,7 +127,9 @@ export function parseGeminiListPayload(payload: unknown): GeminiListPage {
     const title = typeof row[1] === 'string' && row[1].trim()
       ? row[1].trim() : 'Untitled Gemini conversation';
     const updatedAt = toIso(row[5]);
-    if (!updatedAt) continue;
+    if (!updatedAt) {
+      throw new Error(`Gemini conversation ${id} has no valid update timestamp; refusing to skip it`);
+    }
     items.push({ id, title, updated_at: updatedAt });
     titleCache.set(id, title);
     updatedAtCache.set(id, updatedAt);
