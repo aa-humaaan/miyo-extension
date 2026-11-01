@@ -31,6 +31,7 @@ interface GeminiListPage {
 let sessionCache: GeminiSession | null = null;
 let requestId = 100_000;
 const titleCache = new Map<string, string>();
+const updatedAtCache = new Map<string, string>();
 
 function asArray(value: unknown): unknown[] { return Array.isArray(value) ? value : []; }
 function atPath(value: unknown, path: number[]): unknown {
@@ -129,6 +130,7 @@ export function parseGeminiListPayload(payload: unknown): GeminiListPage {
     if (!updatedAt) continue;
     items.push({ id, title, updated_at: updatedAt });
     titleCache.set(id, title);
+    updatedAtCache.set(id, updatedAt);
   }
   items.sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   return { items, next_cursor: next };
@@ -149,7 +151,7 @@ export function parseGeminiConversation(id: string, payload: unknown): ChatConve
   // fail closed if a non-empty turn has no readable prompt or answer.
   for (const turnValue of turns.slice().reverse()) {
     const turn = asArray(turnValue);
-    const timestamp = toIso(turn[4]);
+    const timestamp = null; // Gemini turn payloads do not expose a stable per-message timestamp.
     const userText = asText(atPath(turn, [2, 0, 0])).trim();
     if (userText) messages.push({ role: 'user', text: userText, created_at: timestamp });
 
@@ -177,10 +179,7 @@ export function parseGeminiConversation(id: string, payload: unknown): ChatConve
   if (turns.length > 0 && messages.length === 0) {
     throw new Error('Gemini returned turns but no readable message text; the provider response schema may have changed');
   }
-  const timestamps = messages.map((m) => m.created_at).filter((v): v is string => Boolean(v));
-  const sortedTimes = timestamps.map(Date.parse).filter(Number.isFinite).sort((a, b) => a - b);
-  const createdAt = sortedTimes.length ? new Date(sortedTimes[0]!).toISOString() : null;
-  const updatedAt = sortedTimes.length ? new Date(sortedTimes[sortedTimes.length - 1]!).toISOString() : createdAt;
+  const updatedAt = updatedAtCache.get(id) ?? updatedAtCache.get(id.startsWith('c_') ? id : `c_${id}`) ?? null;
   const conversationId = id.startsWith('c_') ? id : `c_${id}`;
   return {
     site: 'gemini',
