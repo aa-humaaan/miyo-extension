@@ -255,8 +255,33 @@ export const geminiAdapter: ChatSiteAdapter = {
     catch { sessionCache = null; return { signedIn: false, email: null }; }
   },
   async listItems(cursor: string | null): Promise<ItemListPage> {
-    const page = parseGeminiListPayload(await geminiRpc(LIST_RPC, [PAGE_SIZE, cursor, [0, null, 1]]));
-    return { items: page.items, next_cursor: page.next_cursor, total: null };
+    // Gemini stores pinned and unpinned conversations in separate list
+    // buckets. Walk both buckets and paginate each independently so the
+    // archive does not silently omit pinned conversations.
+    let state: { category: 0 | 1; token: string | null } = { category: 1, token: null };
+    if (cursor) {
+      try {
+        const parsed = JSON.parse(cursor) as { category?: unknown; token?: unknown };
+        if ((parsed.category === 0 || parsed.category === 1) &&
+          (parsed.token === null || typeof parsed.token === 'string')) {
+          state = { category: parsed.category, token: parsed.token as string | null };
+        } else {
+          throw new Error('invalid cursor');
+        }
+      } catch {
+        throw new Error('Gemini pagination cursor is invalid; restart the capture');
+      }
+    }
+    const page = parseGeminiListPayload(
+      await geminiRpc(LIST_RPC, [PAGE_SIZE, state.token, [state.category, null, 1]])
+    );
+    let nextCursor: string | null = null;
+    if (page.next_cursor) {
+      nextCursor = JSON.stringify({ category: state.category, token: page.next_cursor });
+    } else if (state.category === 1) {
+      nextCursor = JSON.stringify({ category: 0, token: null });
+    }
+    return { items: page.items, next_cursor: nextCursor, total: null };
   },
   async fetchConversation(id: string): Promise<ChatConversation> {
     const normalizedId = id.startsWith('c_') ? id.slice(2) : id;
