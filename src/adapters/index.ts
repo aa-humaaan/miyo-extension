@@ -4,9 +4,11 @@
 
 import { chatgptAdapter } from './chatgpt.js';
 import { claudeAdapter } from './claude.js';
+import { geminiAdapter } from './gemini.js';
+import { grokAdapter } from './grok.js';
 import type { SiteAdapter, SiteId } from '../framework/types.js';
 
-export const ADAPTERS: SiteAdapter[] = [chatgptAdapter, claudeAdapter];
+export const ADAPTERS: SiteAdapter[] = [chatgptAdapter, claudeAdapter, geminiAdapter, grokAdapter];
 
 export function getAdapter(id: SiteId): SiteAdapter | null {
   return ADAPTERS.find((a) => a.id === id) ?? null;
