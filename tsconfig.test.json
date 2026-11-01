@@ -5,14 +5,21 @@
     "outDir": ".test-dist",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "src/framework/chat.ts",
     "src/framework/markdown.ts",
     "src/framework/**/*.test.ts",
     "src/miyo-wire.ts",
-    "src/miyo-wire.test.ts"
+    "src/miyo-wire.test.ts",
+    "src/adapters/gemini.ts",
+    "src/adapters/grok.ts",
+    "src/adapters/multi-platform.test.ts",
+    "src/framework/types.ts",
+    "src/framework/rate-limit.ts"
   ],
   "exclude": []
 }
