@@ -141,17 +141,39 @@ export function parseGeminiConversation(id: string, payload: unknown): ChatConve
     throw new Error(`Gemini conversation reached the ${MAX_TURNS_PER_CONVERSATION.toLocaleString()}-turn safety cap; refusing to export a possibly incomplete history`);
   }
   const messages: ChatMessage[] = [];
+
+  // Gemini's web API returns turns newest-first. The stable shape used by
+  // the current web client has user text at [2][0][0] and candidate arrays
+  // at [3][0]. Candidate text is [1][0]; candidate status [8][0] == 2
+  // denotes a completed generation. Ignore metadata-only candidates, but
+  // fail closed if a non-empty turn has no readable prompt or answer.
   for (const turnValue of turns.slice().reverse()) {
     const turn = asArray(turnValue);
     const timestamp = toIso(turn[4]);
-    // Google RPC history shape: user text at turn[2][0][0], candidate
-    // text commonly at turn[3][0][0][1][0]. A schema mismatch is rejected
-    // below rather than silently writing an empty archive.
     const userText = asText(atPath(turn, [2, 0, 0])).trim();
-    const assistantText = asText(atPath(turn, [3, 0, 0, 1, 0])).trim();
     if (userText) messages.push({ role: 'user', text: userText, created_at: timestamp });
-    if (assistantText) messages.push({ role: 'assistant', text: assistantText, created_at: timestamp });
+
+    const candidates = asArray(atPath(turn, [3, 0]));
+    const candidateTexts = candidates.flatMap((candidateValue) => {
+      const candidate = asArray(candidateValue);
+      const candidateText = asText(atPath(candidate, [1, 0])).trim();
+      if (!candidateText) return [];
+      const completionStatus = atPath(candidate, [8, 0]);
+      if (completionStatus !== 2) {
+        throw new Error('Gemini response is not finalized; wait for generation to finish and retry');
+      }
+      return [candidateText];
+    });
+    for (const answer of candidateTexts) {
+      messages.push({ role: 'assistant', text: answer, created_at: timestamp });
+    }
+
+    if (!userText && candidateTexts.length === 0 && turn.length > 0) {
+      // Some turns can be metadata-only; don't emit them.
+      continue;
+    }
   }
+
   if (turns.length > 0 && messages.length === 0) {
     throw new Error('Gemini returned turns but no readable message text; the provider response schema may have changed');
   }
