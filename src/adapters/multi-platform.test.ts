@@ -17,23 +17,46 @@ test('Gemini list parser preserves pagination token and timestamp', () => {
   }]);
 });
 
-test('Gemini conversation parser converts newest-first turns into chronological messages', () => {
-  const turn = [
-    ['meta'],
-    ['meta'],
+test('Gemini conversation parser reads candidate text and reverses newest-first turns', () => {
+  const older = [
+    ['meta', 'reply-older'],
+    null,
     [['Question from user']],
-    [[['response-id', ['Answer from Gemini']]]],
+    [[['candidate-older', ['Answer from Gemini'], null, null, null, null, null, null, [2]]]],
     [1_780_000_000, 0],
   ];
-  const conversation = parseGeminiConversation('c_abc123', [[turn]]);
+  const newer = [
+    ['meta', 'reply-newer'],
+    null,
+    [['Second question']],
+    [[['candidate-newer', ['Second answer'], null, null, null, null, null, null, [2]]]],
+    [1_780_000_100, 0],
+  ];
+  const conversation = parseGeminiConversation('c_abc123', [[newer, older]]);
   assert.equal(conversation.conversation_id, 'c_abc123');
   assert.deepEqual(conversation.messages.map((m) => [m.role, m.text]), [
     ['user', 'Question from user'],
     ['assistant', 'Answer from Gemini'],
+    ['user', 'Second question'],
+    ['assistant', 'Second answer'],
   ]);
 });
 
-test('Grok list parser maps create/modify timestamps and next token', () => {
+test('Gemini conversation parser refuses unfinished model responses', () => {
+  const turn = [
+    ['meta', 'reply-running'],
+    null,
+    [['Question']],
+    [[['candidate-running', ['Partial answer'], null, null, null, null, null, null, [1]]]],
+    [1_780_000_000, 0],
+  ];
+  assert.throws(
+    () => parseGeminiConversation('c_running', [[turn]]),
+    /not finalized/
+  );
+});
+
+test('Grok list parser maps modify timestamp and next token', () => {
   const page = parseGrokListPayload({
     conversations: [{
       conversationId: 'grok-1',
@@ -49,17 +72,36 @@ test('Grok list parser maps create/modify timestamps and next token', () => {
   }]);
 });
 
-test('Grok detail parser follows the active response path and maps user/assistant roles', () => {
+test('Grok detail joins response graph to loaded response bodies', () => {
   const conversation = parseGrokConversation('grok-1', {
     conversationId: 'grok-1',
     title: 'Test conversation',
     responseNodes: [
-      { responseId: 'user-1', role: 'human', parentResponseId: null, query: 'Hello Grok' },
-      { responseId: 'assistant-1', role: 'assistant', parentResponseId: 'user-1', message: 'Hello there' },
+      { responseId: 'user-1', sender: 'human', parentResponseId: null },
+      { responseId: 'assistant-1', sender: 'assistant', parentResponseId: 'user-1' },
+    ],
+    inflightResponses: [],
+    responses: [
+      { responseId: 'user-1', sender: 'human', query: 'Hello Grok', createTime: '2026-06-02T10:00:00.000Z' },
+      { responseId: 'assistant-1', sender: 'assistant', message: 'Hello there', createTime: '2026-06-02T10:00:05.000Z' },
     ],
   });
   assert.deepEqual(conversation.messages.map((m) => [m.role, m.text]), [
     ['user', 'Hello Grok'],
     ['assistant', 'Hello there'],
   ]);
+});
+
+test('Grok detail refuses in-flight and missing response bodies', () => {
+  assert.throws(() => parseGrokConversation('grok-2', {
+    responseNodes: [{ responseId: 'pending', sender: 'assistant', parentResponseId: null }],
+    inflightResponses: ['pending'],
+    responses: [],
+  }), /still generating/);
+
+  assert.throws(() => parseGrokConversation('grok-3', {
+    responseNodes: [{ responseId: 'missing', sender: 'assistant', parentResponseId: null }],
+    inflightResponses: [],
+    responses: [],
+  }), /body missing/);
 });
