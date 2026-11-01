@@ -1,7 +1,7 @@
 {
   "name": "miyo-capture",
   "version": "0.3.8",
-  "description": "Capture your AI chats (ChatGPT, Claude) as local markdown in a folder you choose. Use them with Miyo, Obsidian, or any tool that reads markdown.",
+  "description": "Capture ChatGPT, Claude, Gemini and Grok chats as local markdown in a folder you choose. Use them with Miyo, Obsidian, or any tool that reads markdown.",
   "private": true,
   "license": "MIT",
   "type": "module",
