@@ -175,15 +175,26 @@ async function fetchDetail(id: string): Promise<unknown> {
   const detail = await grokApi<Record<string, unknown>>(
     `/rest/app-chat/conversations/${encodeURIComponent(id)}/response-node?includeThreads=true`
   );
-  const responseIds = Array.isArray(detail.responseIds) ? detail.responseIds.filter((v): v is string => typeof v === 'string') : [];
-  if (!responseIds.length) return detail;
+  const responseNodes = Array.isArray(detail.responseNodes) ? detail.responseNodes as Array<{ responseId?: unknown }> : null;
+  if (!responseNodes) throw new Error('Grok response-node endpoint omitted responseNodes');
+  const responseIds = responseNodes
+    .map((node) => node.responseId)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0);
+  if (!responseIds.length) {
+    return {
+      ...detail,
+      inflightResponses: Array.isArray(detail.inflightResponses) ? detail.inflightResponses : [],
+      responses: [],
+    };
+  }
   const loaded = await grokApi<unknown>(
     `/rest/app-chat/conversations/${encodeURIComponent(id)}/load-responses`,
     {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ conversationId: id, responseIds }),
-  });
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ responseIds }),
+    }
+  );
   if (loaded && typeof loaded === 'object') return { ...detail, ...(loaded as object) };
   throw new Error('Grok response loader returned an unexpected shape');
 }
