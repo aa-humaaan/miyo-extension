@@ -89,7 +89,7 @@ export function parseGrokListPayload(raw: unknown): ItemListPage {
 }
 
 function roleOf(node: GrokNode): 'user' | 'assistant' | null {
-  const role = (node.role ?? '').toLowerCase();
+  const role = (node.role ?? (node as GrokNode & { sender?: string }).sender ?? '').toLowerCase();
   if (['user', 'human'].includes(role)) return 'user';
   if (['assistant', 'model', 'grok'].includes(role)) return 'assistant';
   return null;
