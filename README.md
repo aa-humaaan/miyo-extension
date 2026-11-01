@@ -4,9 +4,9 @@
 
 > Auto-sync your AI chats to local markdown files. Yours, on your machine.
 
-A browser extension that turns your **ChatGPT** and **Claude**
-conversations into markdown files you own. No accounts, no cloud, no
-telemetry.
+A browser extension that turns your **ChatGPT**, **Claude**, **Gemini**,
+and **Grok** conversations into markdown files you own. No Miyo cloud
+account is required for local ZIP capture.
 
 Most exporters make you click Download every time. Miyo Capture does
 that too — but with the free [Miyo Desktop](https://www.miyo.md/) app it
@@ -37,7 +37,7 @@ your editor, or `grep`. Nothing locks you in.
 ## How it works
 
 1. Open the popup. You'll see one card per supported site
-   (ChatGPT, Claude).
+   (ChatGPT, Claude, Gemini, and Grok).
 2. Sign in to the site in a tab (if you aren't already).
 3. Pick a time range (last 7 days, 30 days, all available, or a
    custom window).
@@ -48,8 +48,12 @@ your editor, or `grep`. Nothing locks you in.
 - **ChatGPT** — full conversation history (titles, timestamps,
   messages).
 - **Claude (claude.ai)** — full conversation history.
+- **Gemini (gemini.google.com)** — conversation history through the signed-in Gemini web app.
+- **Grok (grok.com)** — conversation history through the signed-in Grok web app.
 
-More sources are planned. Each is a single adapter file — see
+Gemini and Grok use undocumented web-app endpoints that may change without notice.
+The adapters validate response shapes and stop with an error rather than silently
+exporting an incomplete transcript. Each source is an adapter — see
 [docs/ADAPTER-API.md](docs/ADAPTER-API.md).
 
 ## Sync to Miyo Desktop (optional)
@@ -63,9 +67,11 @@ clicking Download.
 
 - **Opt-in, off by default.** Nothing is shared until you turn the
   toggle on; turning it off stops it.
-- **Cookies cross the wire here, not chats.** The extension sends only
-  the session cookies for `chatgpt.com` / `claude.ai` so the desktop can
-  fetch on your behalf — the conversation data itself flows desktop-side,
+- **Cookies cross the wire here, not chats.** The current desktop sync handoff
+  supports only ChatGPT and Claude. Gemini and Grok are supported in local ZIP
+  capture mode; their desktop sync needs matching native-host support.
+  The extension sends only the session cookies for `chatgpt.com` / `claude.ai`
+  so the desktop can fetch on your behalf — the conversation data itself flows desktop-side,
   never through the extension.
 - **Local transport, no loopback port.** Delivery is over Chrome
   [native messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)

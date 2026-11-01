@@ -180,6 +180,8 @@ function escape(s: string): string {
 const SITE_BRAND: Record<string, { color: string; soft: string; initial: string }> = {
   chatgpt: { color: '#10a37f', soft: '#e0f5ee', initial: 'C' },
   claude_ai: { color: '#c66439', soft: '#f8e7dc', initial: 'A' },
+  gemini: { color: '#4285f4', soft: '#e7efff', initial: 'G' },
+  grok: { color: '#111827', soft: '#e5e7eb', initial: 'X' },
 };
 
 function brandFor(siteId: string, label: string): { color: string; soft: string; initial: string } {
