@@ -73,6 +73,9 @@ export function parseGrokListPayload(raw: unknown): ItemListPage {
   const items = rows.flatMap((row) => {
     const id = row.conversationId ?? row.id;
     const updated = iso(row.modifyTime ?? row.createTime);
+    if (id && !updated) {
+      throw new Error(`Grok conversation ${id} has no valid update timestamp; refusing to skip it`);
+    }
     return id && updated ? [{ id, updated_at: updated }] : [];
   });
   items.sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
