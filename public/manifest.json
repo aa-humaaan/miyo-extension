@@ -37,8 +37,7 @@
     "https://claude.ai/*",
     "https://*.claude.ai/*",
     "https://gemini.google.com/*",
-    "https://*.google.com/*",
     "https://grok.com/*",
-    "https://*.grok.com/*"
+    "https://accounts.google.com/*"
   ]
 }
